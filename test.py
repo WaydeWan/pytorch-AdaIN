@@ -42,16 +42,16 @@ def style_transfer(vgg, decoder, content, style, alpha=1.0,
 
 parser = argparse.ArgumentParser()
 # Basic options
-parser.add_argument('--content', type=str,
+parser.add_argument('--content', type=str, default=None,
                     help='File path to the content image')
-parser.add_argument('--content_dir', type=str,
-                    help='Directory path to a batch of content images')
-parser.add_argument('--style', type=str,
+parser.add_argument('--content_dir', type=str, default='my_content',
+                    help='Directory path to a batch of content images (default: my_content)')
+parser.add_argument('--style', type=str, default=None,
                     help='File path to the style image, or multiple style \
                     images separated by commas if you want to do style \
                     interpolation or spatial control')
-parser.add_argument('--style_dir', type=str,
-                    help='Directory path to a batch of style images')
+parser.add_argument('--style_dir', type=str, default='my_style',
+                    help='Directory path to a batch of style images (default: my_style)')
 parser.add_argument('--vgg', type=str, default='models/vgg_normalised.pth')
 parser.add_argument('--decoder', type=str, default='models/decoder.pth')
 
@@ -89,15 +89,37 @@ output_dir = Path(args.output)
 output_dir.mkdir(exist_ok=True, parents=True)
 
 # Either --content or --contentDir should be given.
-assert (args.content or args.content_dir)
+if not (args.content or args.content_dir):
+    print("❌ Error: Content image parameter is required")
+    print("📝 Usage:")
+    print("   Method 1: python test.py --content <content_image_path> --style <style_image_path>")
+    print("   Method 2: python test.py --content_dir <content_dir> --style_dir <style_dir>")
+    print("   Method 3: python test.py  (using default paths: my_content/ and my_style/)")
+    print("\n💡 Example:")
+    print("   python test.py --content input/content/cornell.jpg --style input/style/woman_with_hat_matisse.jpg")
+    exit(1)
 if args.content:
     content_paths = [Path(args.content)]
 else:
     content_dir = Path(args.content_dir)
-    content_paths = [f for f in content_dir.glob('*')]
+    if not content_dir.exists():
+        print(f"❌ Error: Content image directory not found: {content_dir}")
+        print(f"💡 Please create directory {content_dir} and put your images in it, or use --content_dir to specify another path")
+        exit(1)
+    content_paths = [f for f in content_dir.glob('*') if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png']]
+    if not content_paths:
+        print(f"❌ Error: No image files found in directory {content_dir}")
+        print(f"💡 Supported formats: .jpg, .jpeg, .png")
+        exit(1)
 
 # Either --style or --styleDir should be given.
-assert (args.style or args.style_dir)
+if not (args.style or args.style_dir):
+    print("❌ Error: Style image parameter is required")
+    print("📝 Usage:")
+    print("   python test.py --content <content_image> --style <style_image>")
+    print("   or: python test.py --content_dir <content_dir> --style_dir <style_dir>")
+    print("   or: python test.py  (using default paths: my_content/ and my_style/)")
+    exit(1)
 if args.style:
     style_paths = args.style.split(',')
     if len(style_paths) == 1:
@@ -110,13 +132,42 @@ if args.style:
         interpolation_weights = [w / sum(weights) for w in weights]
 else:
     style_dir = Path(args.style_dir)
-    style_paths = [f for f in style_dir.glob('*')]
+    if not style_dir.exists():
+        print(f"❌ Error: Style image directory not found: {style_dir}")
+        print(f"💡 Please create directory {style_dir} and put style images in it, or use --style_dir to specify another path")
+        exit(1)
+    style_paths = [f for f in style_dir.glob('*') if f.is_file() and f.suffix.lower() in ['.jpg', '.jpeg', '.png']]
+    if not style_paths:
+        print(f"❌ Error: No image files found in directory {style_dir}")
+        print(f"💡 Supported formats: .jpg, .jpeg, .png")
+        exit(1)
 
 decoder = net.decoder
 vgg = net.vgg
 
 decoder.eval()
 vgg.eval()
+
+# Check if model files exist
+if not Path(args.decoder).exists():
+    print(f"❌ Error: Model file not found: {args.decoder}")
+    print("📥 Please download model files from:")
+    print("   https://github.com/naoto0804/pytorch-AdaIN/releases/tag/v0.0.0")
+    print("   Required files:")
+    print("   1. decoder.pth")
+    print("   2. vgg_normalised.pth")
+    print("   Please put them in the models/ directory")
+    exit(1)
+
+if not Path(args.vgg).exists():
+    print(f"❌ Error: Model file not found: {args.vgg}")
+    print("📥 Please download model files from:")
+    print("   https://github.com/naoto0804/pytorch-AdaIN/releases/tag/v0.0.0")
+    print("   Required files:")
+    print("   1. decoder.pth")
+    print("   2. vgg_normalised.pth")
+    print("   Please put them in the models/ directory")
+    exit(1)
 
 decoder.load_state_dict(torch.load(args.decoder))
 vgg.load_state_dict(torch.load(args.vgg))
@@ -159,3 +210,4 @@ for content_path in content_paths:
             output_name = output_dir / '{:s}_stylized_{:s}{:s}'.format(
                 content_path.stem, style_path.stem, args.save_ext)
             save_image(output, str(output_name))
+            print(f"✅ Style transfer completed! Result saved to: {output_name}")
