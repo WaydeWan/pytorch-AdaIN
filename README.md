@@ -5,6 +5,15 @@ I'm really grateful to the [original implementation](https://github.com/xunhuang
 
 ![Results](results.png)
 
+## 📄 Report
+
+A comprehensive report on the model architecture, principles, and usage is available in [REPORT.md](REPORT.md). The report includes:
+- Model architecture and AdaIN principles
+- Code structure analysis
+- Detailed usage guide
+- Technical implementation details
+- Experimental results
+
 ## Requirements
 Please install requirements by `pip install -r requirements.txt`
 
@@ -23,15 +32,28 @@ Please install requirements by `pip install -r requirements.txt`
 Download decoder.pth / vgg_normalized.pth from [release](https://github.com/naoto0804/pytorch-AdaIN/releases/tag/v0.0.0) and put them under `models/`.
 
 ### Test
-Use `--content` and `--style` to provide the respective path to the content and style image.
-```
-CUDA_VISIBLE_DEVICES=<gpu_id> python test.py --content input/content/cornell.jpg --style input/style/woman_with_hat_matisse.jpg
+
+**Simplest way (using default directories):**
+```bash
+# Place your images in:
+# - my_content/ (content images)
+# - my_style/ (style images)
+
+python test.py
 ```
 
+**Specify image paths:**
+```bash
+python test.py --content input/content/cornell.jpg --style input/style/woman_with_hat_matisse.jpg
+```
+
+**Batch processing:**
 You can also run the code on directories of content and style images using `--content_dir` and `--style_dir`. It will save every possible combination of content and styles to the output directory.
+```bash
+python test.py --content_dir input/content --style_dir input/style
 ```
-CUDA_VISIBLE_DEVICES=<gpu_id> python test.py --content_dir input/content --style_dir input/style
-```
+
+**Note:** If `content_dir` has N images and `style_dir` has M images, this will generate N×M output images (all possible combinations).
 
 This is an example of mixing four styles by specifying `--style` and `--style_interpolation_weights` option.
 ```
@@ -56,6 +78,19 @@ For more details and parameters, please refer to --help option.
 I share the model trained by this code as `iter_1000000.pth
 ` at [release](https://github.com/naoto0804/pytorch-AdaIN/releases/tag/v0.0.0).
 
+## Project Structure
+
+- `REPORT.md` - Comprehensive report on the model
+- `test.py` - Main inference script (supports default paths: `my_content/` and `my_style/`)
+- `train.py` - Training script
+- `net.py` - Network architecture definitions
+- `function.py` - Core algorithms (AdaIN, color preservation)
+- `models/` - Pre-trained model files
+- `output/` - Style transfer results
+- `my_content/` - Default directory for content images
+- `my_style/` - Default directory for style images
+
 ## References
 - [1]: X. Huang and S. Belongie. "Arbitrary Style Transfer in Real-time with Adaptive Instance Normalization.", in ICCV, 2017.
 - [2]: [Original implementation in Torch](https://github.com/xunhuang1995/AdaIN-style)
+- [3]: [PyTorch implementation](https://github.com/naoto0804/pytorch-AdaIN)
